@@ -19,3 +19,8 @@ func IntToIP(nn uint32) net.IP {
 	binary.BigEndian.PutUint32(ip, nn)
 	return ip
 }
+
+// Number returns the number
+func (i I4) Number() uint32 {
+	return i.ip
+}
