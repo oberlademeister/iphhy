@@ -1,7 +1,6 @@
-package iph
+package iphhy
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -93,29 +92,9 @@ func MustNewI4(s string) I4 {
 	return ai
 }
 
-// String returns the IP in CIDR notation
-func (i4 I4) String() string {
-	return i4.IPString() + "/" + fmt.Sprint(i4.maskBits)
-}
-
-// DoubleDottedQuad returns the IP in double dotted quad 192.168.0.1 255.255.255.255
-func (i4 I4) DoubleDottedQuad() string {
-	return i4.IPString() + " " + v4MaskStrings[i4.maskBits]
-}
-
 // IP returns the IP
 func (i4 I4) IP() net.IP {
 	return IntToIP(i4.ip)
-}
-
-// IPString returns the IP
-func (i4 I4) IPString() string {
-	var out string
-	for i := 0; i < 4; i++ {
-		b := (i4.ip >> uint32(24-8*i)) & 0xFF
-		out += fmt.Sprintf("%d.", b)
-	}
-	return out[0 : len(out)-1]
 }
 
 // Mask returns the Mask
@@ -126,9 +105,4 @@ func (i4 I4) Mask() net.IPMask {
 // MaskBits returns the Mask
 func (i4 I4) MaskBits() int {
 	return i4.maskBits
-}
-
-// MaskString returns the mask in dq
-func (i4 I4) MaskString() string {
-	return v4MaskStrings[i4.maskBits]
 }

@@ -1,26 +1,23 @@
-package iph
+package iphhy
 
-import "net"
+import "fmt"
 
-// GetAllIPs returns a slice with all IPs in the network
-func (i I4) GetAllIPs() []net.IP {
-	var out []net.IP
-	lower := IPToInt(i.BaseIP())
-	upper := IPToInt(i.LastIP())
-	for i := lower; i <= upper; i++ {
-		out = append(out, IntToIP(i))
+// GetAll returns a slice of all I4 numbers, including first and last
+func (i I4) GetAll(lowerOffset, upperOffset int) ([]I4, error) {
+	lower, err := i.Offset(lowerOffset)
+	if err != nil {
+		return nil, fmt.Errorf("lowerOffset")
 	}
-	return out
-}
-
-// GetAllIPStrings returns a slice with all IPs in the network
-// withMask determines if the mask is added in CIDR notation
-func (i I4) GetAllIPStrings() []string {
-	var out []string
-	lower := IPToInt(i.BaseIP())
-	upper := IPToInt(i.LastIP())
-	for i := lower; i <= upper; i++ {
-		out = append(out, IntToIP(i).String())
+	upper, err := i.Offset(upperOffset)
+	if err != nil {
+		return nil, fmt.Errorf("upperOffset")
 	}
-	return out
+	if lower.Number() > upper.Number() {
+		return nil, fmt.Errorf("lowerOffset has to result in lower ip than upperOffset")
+	}
+	var ret []I4
+	for num := lower.Number(); num <= upper.Number(); num++ {
+		ret = append(ret, I4{num, i.maskBits})
+	}
+	return ret, nil
 }

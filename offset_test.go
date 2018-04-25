@@ -1,4 +1,4 @@
-package iph
+package iphhy
 
 import "testing"
 
@@ -15,8 +15,8 @@ func TestBaseLast(t *testing.T) {
 	for i, tt := range tests {
 		aip, _ := NewI4(tt.input)
 		gotHostInt := aip.ip
-		gotBase := IPToInt(aip.BaseIP())
-		gotLast := IPToInt(aip.LastIP())
+		gotBase := aip.Base().Number()
+		gotLast := aip.Last().Number()
 		switch {
 		case gotHostInt != tt.wantedHostInt:
 			t.Errorf("TestBaseLast#%d: tt: %v IpToInt failed: %d", i, tt, gotHostInt)
@@ -39,6 +39,9 @@ func TestOffset(t *testing.T) {
 		wantederrisnil bool
 	}{
 		{args{"192.168.0.1/24", 0}, "192.168.0.0/24", true},
+		{args{"192.168.0.1/24", 2}, "192.168.0.2/24", true},
+		{args{"192.168.0.1/24", -1}, "192.168.0.255/24", true},
+		{args{"192.168.0.1/24", -2}, "192.168.0.254/24", true},
 	}
 
 	for i, tt := range tests {

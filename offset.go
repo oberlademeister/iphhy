@@ -1,4 +1,4 @@
-package iph
+package iphhy
 
 import (
 	"fmt"
@@ -15,8 +15,14 @@ func invertMask(oldMask net.IPMask) net.IPMask {
 	return newMask
 }
 
-// BaseIP returns the network number
-func (i I4) BaseIP() net.IP {
+// Rebase changes the underlying object to the base
+func (i *I4) Rebase() {
+	base := i.Base()
+	i.ip = base.ip
+}
+
+// Base returns a new I4 where the ip is the network number
+func (i I4) Base() I4 {
 	m := net.CIDRMask(i.maskBits, 32)
 	ip := IntToIP(i.ip)
 	b := make([]byte, 4)
@@ -25,18 +31,18 @@ func (i I4) BaseIP() net.IP {
 		b[i] = ip[i] & m[i]
 	}
 	//fmt.Printf("m: %08b ip: %08b b: %08b\n", m, ip, b)
-	return b
+	return I4{IPToInt(b), i.maskBits}
 }
 
-// LastIP returns the last number in the network
-func (i I4) LastIP() net.IP {
+// Last returns a new I4 where the ip is the last number in the network
+func (i I4) Last() I4 {
 	m := invertMask(net.CIDRMask(i.maskBits, 32))
 	ip := IntToIP(i.ip)
 	b := make([]byte, 4)
 	for i := 0; i < 4; i++ {
 		b[i] = ip[i] | m[i]
 	}
-	return b
+	return I4{IPToInt(b), i.maskBits}
 }
 
 // Offset adds the offset to the network address
@@ -45,8 +51,8 @@ func (i I4) LastIP() net.IP {
 // offset -1 returns the last address (i.e. the broadcast address)
 // offset -2 returns the last host address
 func (i *I4) Offset(offset int) (I4, error) {
-	lower := IPToInt(i.BaseIP())
-	upper := IPToInt(i.LastIP())
+	lower := i.Base().Number()
+	upper := i.Last().Number()
 	var newIPInt uint32
 	switch {
 	case offset == 0:
