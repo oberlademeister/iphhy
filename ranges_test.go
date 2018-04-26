@@ -1,85 +1,52 @@
 package iphhy
 
 import (
-	"net"
 	"reflect"
 	"testing"
 )
 
-func TestI4_GetAllIPs(t *testing.T) {
-	type fields struct {
-		ip       uint32
-		maskBits int
+func TestI4_GetAll(t *testing.T) {
+	type args struct {
+		lowerOffset int
+		upperOffset int
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   []net.IP
+		name    string
+		i       I4
+		args    args
+		want    []I4
+		wantErr bool
 	}{
 		{
-			name: "192.168.0.0/24",
-			fields: fields{
-				ip:       3232235520,
-				maskBits: 29,
+			name: "t1",
+			i:    MustNewI4("192.168.1.0/29"),
+			args: args{
+				lowerOffset: 0,
+				upperOffset: -1,
 			},
-			want: []net.IP{
-				[]byte{192, 168, 0, 0},
-				[]byte{192, 168, 0, 1},
-				[]byte{192, 168, 0, 2},
-				[]byte{192, 168, 0, 3},
-				[]byte{192, 168, 0, 4},
-				[]byte{192, 168, 0, 5},
-				[]byte{192, 168, 0, 6},
-				[]byte{192, 168, 0, 7},
+			want: []I4{
+				MustNewI4("192.168.1.0/29"),
+				MustNewI4("192.168.1.1/29"),
+				MustNewI4("192.168.1.2/29"),
+				MustNewI4("192.168.1.3/29"),
+				MustNewI4("192.168.1.4/29"),
+				MustNewI4("192.168.1.5/29"),
+				MustNewI4("192.168.1.6/29"),
+				MustNewI4("192.168.1.7/29"),
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
-		i := I4{
-			ip:       tt.fields.ip,
-			maskBits: tt.fields.maskBits,
-		}
-		if got := i.GetAllIPs(); !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. I4.GetAllIPs() = %v, want %v", tt.name, got, tt.want)
-		}
-	}
-}
-
-func TestI4_GetAllIPStrings(t *testing.T) {
-	type fields struct {
-		ip       uint32
-		maskBits int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   []string
-	}{
-		{
-			name: "192.168.0.0/24",
-			fields: fields{
-				ip:       3232235520,
-				maskBits: 29,
-			},
-			want: []string{
-				"192.168.0.0",
-				"192.168.0.1",
-				"192.168.0.2",
-				"192.168.0.3",
-				"192.168.0.4",
-				"192.168.0.5",
-				"192.168.0.6",
-				"192.168.0.7",
-			},
-		},
-	}
-	for _, tt := range tests {
-		i := I4{
-			ip:       tt.fields.ip,
-			maskBits: tt.fields.maskBits,
-		}
-		if got := i.GetAllIPStrings(); !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. I4.GetAllIPStrings() = %v, want %v", tt.name, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.i.GetAll(tt.args.lowerOffset, tt.args.upperOffset)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("I4.GetAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("I4.GetAll() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
