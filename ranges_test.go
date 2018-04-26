@@ -36,6 +36,36 @@ func TestI4_GetAll(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "boundswrong",
+			i:    MustNewI4("192.168.1.0/29"),
+			args: args{
+				lowerOffset: 3,
+				upperOffset: 2,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "illegal lower offset",
+			i:    MustNewI4("192.168.1.0/29"),
+			args: args{
+				lowerOffset: 30,
+				upperOffset: 2,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "illegal upper offset",
+			i:    MustNewI4("192.168.1.0/29"),
+			args: args{
+				lowerOffset: 3,
+				upperOffset: 30,
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
