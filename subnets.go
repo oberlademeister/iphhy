@@ -21,7 +21,7 @@ func (i I4) NumIPs() int {
 func (i I4) NumHosts() int {
 	switch i.maskBits {
 	case 32:
-		return 0
+		return 1
 	case 31:
 		return 2
 	case 30:
