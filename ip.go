@@ -1,6 +1,8 @@
 package iphhy
 
 import (
+	"fmt"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -38,8 +40,8 @@ func parseDottedQuad(dq string) (uint32, error) {
 	return out, nil
 }
 
-// FromString sets the state from the string
-func (i4 *I4) FromString(s string) error {
+// FromStringNoOffset sets the state from the string
+func (i4 *I4) FromStringNoOffset(s string) error {
 	i4.ip = 0
 	i4.maskBits = 0
 	// first, split the IP from the mask (separated by either a space or a /)
@@ -76,10 +78,46 @@ func (i4 *I4) FromString(s string) error {
 	return nil
 }
 
+// FromString sets the state from the string but supports + Notation for Offsets
+func (i4 *I4) FromString(s string) error {
+	offsetSplit := strings.Split(s, "+")
+	if len(offsetSplit) == 2 {
+		offset, err := strconv.Atoi(offsetSplit[1])
+		if err != nil {
+			log.Printf("can't parse offset from (%s): %v", s, err)
+		}
+		ip, err := NewI4NoOffset(offsetSplit[0])
+		if err != nil {
+			return fmt.Errorf("can't create I4 from (%s): %v", s, err)
+		}
+		hostip, err := ip.Offset(offset)
+		if err != nil {
+			return fmt.Errorf("illegal offset from (%s): %v", s, err)
+		}
+		i4.ip = hostip.ip
+		i4.maskBits = hostip.maskBits
+		return nil
+	}
+	ip, err := NewI4NoOffset(s)
+	if err != nil {
+		return fmt.Errorf("can't create I4 from (%s): %v", s, err)
+	}
+	i4.ip = ip.ip
+	i4.maskBits = ip.maskBits
+	return nil
+}
+
 // NewI4 create a new I4 from a string
 func NewI4(s string) (I4, error) {
 	i := I4{}
 	err := i.FromString(s)
+	return i, err
+}
+
+// NewI4NoOffset create a new I4 from a string
+func NewI4NoOffset(s string) (I4, error) {
+	i := I4{}
+	err := i.FromStringNoOffset(s)
 	return i, err
 }
 
