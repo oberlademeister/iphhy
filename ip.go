@@ -114,6 +114,14 @@ func NewI4(s string) (I4, error) {
 	return i, err
 }
 
+// NewI4FromIP creates a new I4 from net.IP (32 bit mask)
+func NewI4FromIP(ni net.IP) I4 {
+	i := I4{}
+	i.ip = IPToInt(ni)
+	i.maskBits = 32
+	return i
+}
+
 // NewI4NoOffset create a new I4 from a string
 func NewI4NoOffset(s string) (I4, error) {
 	i := I4{}

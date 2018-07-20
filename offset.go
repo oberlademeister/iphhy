@@ -50,7 +50,7 @@ func (i I4) Last() I4 {
 // offset 1 returns the first host address
 // offset -1 returns the last address (i.e. the broadcast address)
 // offset -2 returns the last host address
-func (i *I4) Offset(offset int) (I4, error) {
+func (i I4) Offset(offset int) (I4, error) {
 	lower := i.Base().Number()
 	upper := i.Last().Number()
 	var newIPInt uint32
@@ -67,6 +67,15 @@ func (i *I4) Offset(offset int) (I4, error) {
 		return I4{}, fmt.Errorf("result not in subnet range %s+%d !in [%s]", newIP, offset, i.String())
 	}
 	return I4{newIPInt, i.maskBits}, nil
+}
+
+// MustOffset sames as offset but panics on error
+func (i I4) MustOffset(offset int) I4 {
+	i2, err := i.Offset(offset)
+	if err != nil {
+		panic(err)
+	}
+	return i2
 }
 
 // OffsetString returns the IPv4 string for a given subnet string and a given offset
