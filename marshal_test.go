@@ -1,6 +1,7 @@
 package iphhy
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 
@@ -45,4 +46,36 @@ i2 = "192.168.9.0/24+4"
 	}
 
 	q.Q(tp)
+}
+
+func TestJSON(t *testing.T) {
+	type JSONTestType struct {
+		I *I4
+	}
+
+	type Test struct {
+		in      I4
+		json    string
+		wantErr bool
+	}
+
+	tests := []Test{
+		{
+			in:      MustNewI4("0.0.0.0/0"),
+			json:    `{"I":"0.0.0.0/0"}`,
+			wantErr: false,
+		},
+	}
+	for i, tt := range tests {
+		// JSONTestType to json
+		jtt := JSONTestType{&tt.in}
+		b, err := json.Marshal(jtt)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("TestJSON#Marshal #%d wantErr = %t", i, tt.wantErr)
+		}
+		if bytes.Compare(b, []byte(tt.json)) != 0 {
+			t.Errorf("TestJSON#Marshal #%d want = %s got = %s", i, tt.json, string(b))
+		}
+	}
+
 }
