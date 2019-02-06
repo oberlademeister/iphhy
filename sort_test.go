@@ -22,7 +22,7 @@ func TestI4Numerical(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := I4Numerical(tt.in)
 			sort.Sort(got)
-			if !reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(tt.in, tt.want) {
 				t.Errorf("I4NumericalSort = %v, want %v", got, tt.want)
 			}
 		})
