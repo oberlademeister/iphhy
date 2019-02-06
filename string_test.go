@@ -1,6 +1,8 @@
 package iphhy
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestString(t *testing.T) {
 	tests := []struct {
@@ -30,5 +32,31 @@ func TestString(t *testing.T) {
 		case ms != tt.wantedMaskString:
 			t.Errorf("TestString#%d: tt: string / maskstring failed: %q got %q", i, tt.wantedMaskString, ms)
 		}
+	}
+}
+
+func TestI4_DoubleDottedQuadInvertedMask(t *testing.T) {
+	tests := []struct {
+		name string
+		in   I4
+		want string
+	}{
+		{
+			name: "t1",
+			in:   MustNewI4("192.168.0.1 255.255.255.0"),
+			want: "192.168.0.1 0.0.0.255",
+		},
+		{
+			name: "t2",
+			in:   MustNewI4("192.168.0.1 255.255.192.0"),
+			want: "192.168.0.1 0.0.63.255",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.in.DoubleDottedQuadInvertedMask(); got != tt.want {
+				t.Errorf("I4.DoubleDottedQuadInvertedMask() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
