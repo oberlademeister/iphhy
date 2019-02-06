@@ -144,8 +144,8 @@ func (i4 I4) IP() net.IP {
 }
 
 // Mask returns the Mask
-func (i4 I4) Mask() net.IPMask {
-	return net.CIDRMask(i4.maskBits, 32)
+func (i4 I4) Mask() IPMask {
+	return IPMask(net.CIDRMask(i4.maskBits, 32))
 }
 
 // MaskBits returns the Mask

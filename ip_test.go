@@ -144,7 +144,7 @@ func TestI4_Mask(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   net.IPMask
+		want   IPMask
 	}{
 		{
 			name: "10.0.0.1/24",
@@ -152,7 +152,7 @@ func TestI4_Mask(t *testing.T) {
 				ip:       167772161,
 				maskBits: 24,
 			},
-			want: net.CIDRMask(24, 32),
+			want: CIDRMask(24, 32),
 		},
 	}
 	for _, tt := range tests {
