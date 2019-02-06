@@ -1,6 +1,8 @@
 package iphhy
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // String returns the IP in CIDR notation
 func (i4 I4) String() string {
@@ -15,6 +17,11 @@ func (i4 I4) CIDRString() string {
 // DoubleDottedQuad returns the IP in double dotted quad 192.168.0.1 255.255.255.255
 func (i4 I4) DoubleDottedQuad() string {
 	return i4.IPString() + " " + v4MaskStrings[i4.maskBits]
+}
+
+// DoubleDottedQuadInvertedMask returns the IP in double dotted quad 192.168.0.1 255.255.255.255
+func (i4 I4) DoubleDottedQuadInvertedMask() string {
+	return i4.IPString() + " " + v4InvertedMaskStrings[i4.maskBits]
 }
 
 // IPString returns the IP

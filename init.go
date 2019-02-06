@@ -4,13 +4,16 @@ import "net"
 
 var v4MasksFromDQ map[string]int
 var v4MaskStrings [33]string
+var v4InvertedMaskStrings [33]string
 
 func init() {
 	v4MasksFromDQ = make(map[string]int)
 	for i := 0; i <= 32; i++ {
 		m := net.IP(net.CIDRMask(i, 32)).String()
+		im := net.IP(InvertIPMask(net.CIDRMask(i, 32))).String()
 		v4MasksFromDQ[m] = i
 		v4MaskStrings[i] = m
+		v4InvertedMaskStrings[i] = im
 	}
 }
 
