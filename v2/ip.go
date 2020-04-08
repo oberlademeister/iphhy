@@ -2,6 +2,7 @@ package iphhy
 
 import (
 	"fmt"
+	"math/big"
 	"net"
 	"strconv"
 	"strings"
@@ -17,8 +18,43 @@ type IP struct {
 func NewFromNetIP(ip net.IP) *IP {
 	ret := &IP{ip: make(net.IP, len(ip))}
 	copy(ret.ip, ip)
-	ret.MakeHost()
+	ret.MakeHostInplace()
 	return ret
+}
+
+// NewFromBigInt creates an IP from a net.IP
+func NewFromBigInt(i *big.Int) *IP {
+	b := i.Bytes()
+	ret := &IP{
+		ip: make(net.IP, net.IPv6len),
+	}
+	if len(b) > net.IPv6len {
+		return nil
+	}
+	if len(b) <= net.IPv4len {
+		ret.ip[10] = 0xff
+		ret.ip[11] = 0xff
+	}
+	copy(ret.ip[net.IPv6len-len(b):net.IPv6len], b)
+
+	ret.MakeHostInplace()
+	return ret
+}
+
+// FromBigInt creates an IP from a net.IP
+func (ip *IP) FromBigInt(i *big.Int) {
+	b := i.Bytes()
+	ip.ip = make(net.IP, net.IPv6len)
+	if len(b) > net.IPv6len {
+		return
+	}
+	if len(b) <= net.IPv4len {
+		ip.ip[10] = 0xff
+		ip.ip[11] = 0xff
+	}
+	copy(ip.ip[net.IPv6len-len(b):net.IPv6len], b)
+
+	ip.MakeHostInplace()
 }
 
 // Parse creates an IP from a string
@@ -48,8 +84,7 @@ func Parse(s string) *IP {
 		fmt.Println(ip.ip)
 		return nil
 	}
-
-	ip.MakeHost()
+	ip.MakeHostInplace()
 	return ip
 }
 
@@ -64,11 +99,48 @@ func MaskOk(ip net.IP, cidr int) bool {
 	return cidr <= 128
 }
 
-// MakeHost sets the mask to a host mask
-func (i *IP) MakeHost() {
-	if v4 := i.ip.To4(); v4 != nil {
-		i.mask = 32
+// MakeHost clones and sets the clone's mask to a host mask, then returns it
+func (ip *IP) MakeHost() *IP {
+	ret := ip.Clone()
+	if v4 := ret.ip.To4(); v4 != nil {
+		ret.mask = 32
 	} else {
-		i.mask = 128
+		ret.mask = 128
 	}
+	return ret
+}
+
+// MakeHostInplace sets the mask to a host mask
+func (ip *IP) MakeHostInplace() {
+	if v4 := ip.ip.To4(); v4 != nil {
+		ip.mask = 32
+	} else {
+		ip.mask = 128
+	}
+}
+
+// SetMask clones and sets the clone's mask to a host mask, then returns it
+func (ip *IP) SetMask(m int) *IP {
+	ret := ip.Clone()
+	if MaskOk(ip.ip, m) {
+		ret.mask = m
+	}
+	return ret
+}
+
+// SetMaskInplace sets the mask to a host mask
+func (ip *IP) SetMaskInplace(m int) {
+	if MaskOk(ip.ip, m) {
+		ip.mask = m
+	}
+}
+
+// IsV4 returns true if ip is an IPv4 address
+func (ip *IP) IsV4() bool {
+	return ip.ip.To4() != nil
+}
+
+// IsV6 returns true if ip is an IPv6 address
+func (ip *IP) IsV6() bool {
+	return len(ip.ip) == 16 && ip.ip.To4() == nil
 }

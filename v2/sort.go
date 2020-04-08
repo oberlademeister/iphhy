@@ -1,7 +1,5 @@
 package iphhy
 
-import "bytes"
-
 // Compare is useful for sorting
 func Compare(ipA, ipB *IP) int {
 	if ipA == nil {
@@ -13,7 +11,9 @@ func Compare(ipA, ipB *IP) int {
 	if ipB == nil {
 		return 1
 	}
-	c := bytes.Compare(ipA.ip, ipB.ip)
+	iA := ipA.BigInt()
+	iB := ipB.BigInt()
+	c := iA.Cmp(iB)
 	if c == 0 {
 		switch {
 		case ipA.mask == ipB.mask:
