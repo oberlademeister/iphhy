@@ -3,10 +3,12 @@ package iphhy
 import "net"
 
 // SetMaskBits sets the mask bits
-func (i *I4) SetMaskBits(maskBits int) {
+func (i I4) SetMaskBits(maskBits int) I4 {
+	ret := I4{i.ip, i.maskBits}
 	if maskBits > 0 && maskBits <= 32 {
-		i.maskBits = maskBits
+		ret.maskBits = maskBits
 	}
+	return ret
 }
 
 // InvertIPMask inverts a net.IPMask
