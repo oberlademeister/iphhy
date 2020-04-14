@@ -2,6 +2,13 @@ package iphhy
 
 import "net"
 
+// SetMaskBits sets the mask bits
+func (i *I4) SetMaskBits(maskBits int) {
+	if maskBits > 0 && maskBits <= 32 {
+		i.maskBits = maskBits
+	}
+}
+
 // InvertIPMask inverts a net.IPMask
 func InvertIPMask(in net.IPMask) net.IPMask {
 	out := make(net.IPMask, len(in))
