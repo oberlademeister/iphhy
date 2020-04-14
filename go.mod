@@ -1,5 +1,7 @@
 module github.com/oberlademeister/iphhy
 
+go 1.14
+
 require (
 	github.com/BurntSushi/toml v0.3.0
 	github.com/kr/pretty v0.1.0 // indirect
