@@ -135,6 +135,11 @@ func (ip *IP) SetMaskInplace(m int) {
 	}
 }
 
+// MaskBits returns the Mask
+func (ip *IP) MaskBits() int {
+	return ip.mask
+}
+
 // IsV4 returns true if ip is an IPv4 address
 func (ip *IP) IsV4() bool {
 	return ip.ip.To4() != nil
