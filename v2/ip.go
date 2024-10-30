@@ -166,3 +166,11 @@ func (ip *IP) Overlaps(ip2 *IP) bool {
 	}
 	return true
 }
+
+// NumIPs gives the number of IPs in the subnet
+func (i IP) NumIPs() int {
+	if !i.IsV4() {
+		return 0
+	}
+	return 1 << uint32(32-i.mask)
+}
