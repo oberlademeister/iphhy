@@ -20,22 +20,50 @@ func (ip IP) IPString() string {
 // of the mask is printed
 func (ip IP) DoubleDottedQuad() string {
 	var ret string
-	if ip.IsV4() {
-		ret += ip.ip.String() + " "
-		mask := net.CIDRMask(ip.mask, 32)
-		ret += net.IP(mask).String()
-		return ret
-	}
-	ret += ip.ip.String() + " "
-	mask := net.CIDRMask(ip.mask, 128)
-	ret += mask.String()
+	ret += ip.ip.String() + " " + ip.MaskString()
+	return ret
+}
+
+// DoubleDottedQuadInvertedMask returns a double dotted quad string
+// if the address is v6, the IP address plus the hexadecimal form
+// of the mask is printed
+func (ip IP) DoubleDottedQuadInvertedMask() string {
+	var ret string
+	ret += ip.ip.String() + " " + ip.InvertedMaskString()
 	return ret
 }
 
 // MaskString returns the mask in dq
 func (ip IP) MaskString() string {
-	if !ip.IsV4() {
-		return ""
+	var ret string
+	if ip.IsV4() {
+		mask := net.CIDRMask(ip.mask, 32)
+		ret = net.IP(mask).String()
+		return ret
 	}
-	return v4MaskStrings[ip.mask]
+	mask := net.CIDRMask(ip.mask, 128)
+	ret = mask.String()
+	return ret
+}
+
+// InvertedMaskString returns the mask in dq
+func (ip IP) InvertedMaskString() string {
+	var ret string
+	if ip.IsV4() {
+		mask := InvertIPMask(net.CIDRMask(ip.mask, 32))
+		ret = net.IP(mask).String()
+		return ret
+	}
+	mask := InvertIPMask(net.CIDRMask(ip.mask, 128))
+	ret = mask.String()
+	return ret
+}
+
+// InvertIPMask inverts a net.IPMask
+func InvertIPMask(in net.IPMask) net.IPMask {
+	out := make(net.IPMask, len(in))
+	for i, b := range in {
+		out[i] = ^b
+	}
+	return out
 }
