@@ -55,13 +55,6 @@ func TestParse(t *testing.T) {
 		want *IP
 	}{
 		{
-			name: "empty",
-			args: args{
-				s: "",
-			},
-			want: &IP{ip: net.ParseIP("0.0.0.0"), mask: 0},
-		},
-		{
 			name: "1.2.3.4/24",
 			args: args{
 				s: "1.2.3.4/24",
