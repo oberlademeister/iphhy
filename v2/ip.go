@@ -79,6 +79,26 @@ func Parse(s string) *IP {
 		}
 		return ip
 	}
+	if i := strings.LastIndex(s, " "); i > -1 {
+		address := string([]byte(s)[0:i])
+		mask := string([]byte(s)[i+1 : len(s)])
+		debugln(i, address, mask)
+		ip.ip = net.ParseIP(address)
+		if ip.ip == nil {
+			debugf("ip parse error %s", address)
+			return nil
+		}
+		m := net.ParseIP(mask)
+		if m == nil {
+			debugf("ip parse error %s", address)
+			return nil
+		}
+		ip.mask, _ = net.IPMask(m.To4()).Size()
+		if !MaskOk(ip.ip, ip.mask) {
+			return nil
+		}
+		return ip
+	}
 	ip.ip = net.ParseIP(s)
 	if ip.ip == nil {
 		fmt.Println(ip.ip)
