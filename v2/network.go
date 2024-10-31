@@ -1,6 +1,7 @@
 package iphhy
 
 import (
+	"math/big"
 	"net"
 )
 
@@ -47,4 +48,33 @@ func (i *IP) BroadcastInPlace() {
 		out[i] = address[i] | ^mask[i]
 	}
 	i.ip = out
+}
+
+// Overlaps determines if the two subnets share nodes
+func (ip *IP) Overlaps(ip2 *IP) bool {
+	l1 := ip.Network().BigInt()
+	u1 := ip.Broadcast().BigInt()
+	l2 := ip2.Network().BigInt()
+	u2 := ip2.Broadcast().BigInt()
+	if l1.Cmp(u2) > 0 || l2.Cmp(u1) > 0 {
+		return false
+	}
+	return true
+}
+
+// NumIPs gives the number of IPs in the subnet
+func (ip IP) NumIPs() *big.Int {
+	ret := big.NewInt(1)
+	m := big.NewInt(2)
+	l := 0
+	if ip.IsV4() {
+		l = 32 - ip.mask
+	}
+	if ip.IsV6() {
+		l = 128 - ip.mask
+	}
+	for i := 0; i < l; i++ {
+		ret.Mul(ret, m)
+	}
+	return ret
 }

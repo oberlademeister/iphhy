@@ -154,23 +154,3 @@ func (ip *IP) IsV4() bool {
 func (ip *IP) IsV6() bool {
 	return len(ip.ip) == 16 && ip.ip.To4() == nil
 }
-
-// Overlaps determines if the two subnets share nodes
-func (ip *IP) Overlaps(ip2 *IP) bool {
-	l1 := ip.Network().BigInt()
-	u1 := ip.Broadcast().BigInt()
-	l2 := ip2.Network().BigInt()
-	u2 := ip2.Broadcast().BigInt()
-	if l1.Cmp(u2) > 0 || l2.Cmp(u1) > 0 {
-		return false
-	}
-	return true
-}
-
-// NumIPs gives the number of IPs in the subnet
-func (i IP) NumIPs() int {
-	if !i.IsV4() {
-		return 0
-	}
-	return 1 << uint32(32-i.mask)
-}
