@@ -60,6 +60,9 @@ func (ip *IP) FromBigInt(i *big.Int) {
 // Parse creates an IP from a string
 func Parse(s string) *IP {
 	ip := &IP{}
+	if s == "" {
+		return Parse("0.0.0.0/0")
+	}
 	if i := strings.LastIndex(s, "/"); i > -1 {
 		address := string([]byte(s)[0:i])
 		mask := string([]byte(s)[i+1 : len(s)])
