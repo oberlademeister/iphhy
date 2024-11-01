@@ -7,12 +7,18 @@ import (
 
 // String returns the string/CIDR mask notation
 func (ip IP) String() string {
-	return fmt.Sprintf("%s/%d", ip.ip.String(), ip.mask)
+	if len(ip.ip) > 0 {
+		return fmt.Sprintf("%s/%d", ip.ip.String(), ip.mask)
+	}
+	return fmt.Sprintf("0.0.0.0/%d", ip.mask)
 }
 
 // IPString returns the IP
 func (ip IP) IPString() string {
-	return fmt.Sprintf("%s", ip.ip.String())
+	if len(ip.ip) > 0 {
+		return fmt.Sprintf("%s", ip.ip.String())
+	}
+	return "0.0.0.0"
 }
 
 // DoubleDottedQuad returns a double dotted quad string
