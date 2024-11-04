@@ -37,3 +37,12 @@ func (ip *IP) SubnetOffset(offset int64) (*IP, error) {
 	}
 	return newIP, nil
 }
+
+// MustSubnetOffset sames as SubnetOffset but panics on error
+func (ip *IP) MustSubnetOffset(offset int64) *IP {
+	i2, err := ip.SubnetOffset(offset)
+	if err != nil {
+		panic(err)
+	}
+	return i2
+}
