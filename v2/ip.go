@@ -60,6 +60,9 @@ func (ip *IP) FromBigInt(i *big.Int) {
 // Parse creates an IP from a string
 func Parse(s string) *IP {
 	ip := &IP{}
+	if s == "" {
+		return Parse("0.0.0.0/0")
+	}
 	if i := strings.LastIndex(s, "/"); i > -1 {
 		address := string([]byte(s)[0:i])
 		mask := string([]byte(s)[i+1 : len(s)])
@@ -75,6 +78,26 @@ func Parse(s string) *IP {
 		}
 		ip.mask = maskI
 		if !MaskOk(ip.ip, maskI) {
+			return nil
+		}
+		return ip
+	}
+	if i := strings.LastIndex(s, " "); i > -1 {
+		address := string([]byte(s)[0:i])
+		mask := string([]byte(s)[i+1 : len(s)])
+		debugln(i, address, mask)
+		ip.ip = net.ParseIP(address)
+		if ip.ip == nil {
+			debugf("ip parse error %s", address)
+			return nil
+		}
+		m := net.ParseIP(mask)
+		if m == nil {
+			debugf("ip parse error %s", address)
+			return nil
+		}
+		ip.mask, _ = net.IPMask(m.To4()).Size()
+		if !MaskOk(ip.ip, ip.mask) {
 			return nil
 		}
 		return ip
@@ -133,6 +156,16 @@ func (ip *IP) SetMaskInplace(m int) {
 	if MaskOk(ip.ip, m) {
 		ip.mask = m
 	}
+}
+
+// MaskBits returns the Mask
+func (ip *IP) MaskBits() int {
+	return ip.mask
+}
+
+// IP returns the IP
+func (ip *IP) IP() net.IP {
+	return ip.ip
 }
 
 // IsV4 returns true if ip is an IPv4 address
