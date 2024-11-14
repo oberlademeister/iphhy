@@ -2,25 +2,36 @@ package iphhy
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 // UnmarshalText satisfies encoding.TextUnmarshaler
-func (i4 *I4) UnmarshalText(b []byte) error {
-	err := i4.FromString(string(b))
-	return err
+func (ip *IP) UnmarshalText(b []byte) error {
+	x := Parse(string(b))
+	if x == nil {
+		return errors.New("parse error")
+	}
+	ip.ip = x.ip
+	ip.mask = x.mask
+	return nil
 }
 
 // UnmarshalJSON is used to unmarshal json
-func (i4 *I4) UnmarshalJSON(b []byte) error {
+func (ip *IP) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
 		return err
 	}
-	i4.FromString(s)
+	x := Parse(s)
+	if x == nil {
+		return errors.New("parse error")
+	}
+	ip.ip = x.ip
+	ip.mask = x.mask
 	return nil
 }
 
 // MarshalJSON used to marshal json
-func (i4 I4) MarshalJSON() ([]byte, error) {
-	return json.Marshal(i4.CIDRString())
+func (ip *IP) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ip.String())
 }

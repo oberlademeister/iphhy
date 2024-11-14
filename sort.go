@@ -1,19 +1,42 @@
 package iphhy
 
-// I4Numerical makes IP addresses sortable
-type I4Numerical []I4
-
-func (i4n I4Numerical) Len() int {
-	return len(i4n)
-}
-
-func (i4n I4Numerical) Less(i, j int) bool {
-	if i4n[i].ip == i4n[j].ip {
-		return i4n[i].maskBits < i4n[j].maskBits
+// Compare is useful for sorting
+func Compare(ipA, ipB *IP) int {
+	if ipA == nil {
+		if ipB == nil {
+			return 0
+		}
+		return -1
 	}
-	return i4n[i].ip < i4n[j].ip
+	if ipB == nil {
+		return 1
+	}
+	iA := ipA.BigInt()
+	iB := ipB.BigInt()
+	c := iA.Cmp(iB)
+	if c == 0 {
+		switch {
+		case ipA.mask == ipB.mask:
+			return 0
+		case ipA.mask > ipB.mask:
+			return -1
+		case ipA.mask < ipB.mask:
+			return 1
+		}
+	}
+	return c
 }
 
-func (i4n I4Numerical) Swap(i, j int) {
-	i4n[i], i4n[j] = i4n[j], i4n[i]
+// IPList is a list of IPs
+type IPList []*IP
+
+// Len is used for sorting
+func (ipl IPList) Len() int { return len(ipl) }
+
+// Swap is used for sorting
+func (ipl IPList) Swap(i, j int) { ipl[i], ipl[j] = ipl[j], ipl[i] }
+
+// Less is used for sorting
+func (ipl IPList) Less(i, j int) bool {
+	return Compare(ipl[i], ipl[j]) == -1
 }

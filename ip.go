@@ -2,153 +2,178 @@ package iphhy
 
 import (
 	"fmt"
-	"log"
+	"math/big"
 	"net"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
-// I4 is a simple and easy to use type to handle an IP address or an IP network
-// it is designed to be mutable
-type I4 struct {
-	ip       uint32
-	maskBits int
+// IP is an IP-Address / Mask combo
+type IP struct {
+	ip   net.IP
+	mask int
 }
 
-func parseDottedQuad(dq string) (uint32, error) {
-	var out uint32
-	quads := strings.Split(dq, ".")
-	if len(quads) != 4 {
-		return 0, errors.New("parse error")
-	}
-	for i := 0; i < 4; i++ {
-		val, err := strconv.Atoi(quads[i])
-		if err != nil {
-			return 0, errors.Wrap(err, "parse error")
-		}
-		if (val < 0) || (val > 255) {
-			return 0, errors.New("parse error")
-		}
-		add := val * (1 << uint(24-8*i))
-		if add > 0xFFFFFFFF {
-			panic("something's wrong")
-		}
-		out += uint32(add)
-	}
-	return out, nil
+// NewFromNetIP creates an IP from a net.IP
+func NewFromNetIP(ip net.IP) *IP {
+	ret := &IP{ip: make(net.IP, len(ip))}
+	copy(ret.ip, ip)
+	ret.MakeHostInplace()
+	return ret
 }
 
-// FromStringNoOffset sets the state from the string
-func (i4 *I4) FromStringNoOffset(s string) error {
-	i4.ip = 0
-	i4.maskBits = 0
-	// first, split the IP from the mask (separated by either a space or a /)
-	slashSplit := strings.Split(s, "/")
-	spaceSplit := strings.Split(s, " ")
-	var dq string
-	var err error
-	var newIP uint32
-	var newMask int
-
-	switch {
-	case len(slashSplit) == 2:
-		dq = slashSplit[0]
-		newMask, err = strconv.Atoi(slashSplit[1])
-		if err != nil {
-			return err
-		}
-	case len(spaceSplit) == 2:
-		dq = spaceSplit[0]
-		newMask = getMaskBitsFromString(spaceSplit[1])
-	default:
-		dq = s
-		newMask = 32
+// NewFromBigInt creates an IP from a net.IP
+func NewFromBigInt(i *big.Int) *IP {
+	b := i.Bytes()
+	ret := &IP{
+		ip: make(net.IP, net.IPv6len),
 	}
-	if newMask < 0 || newMask > 32 {
-		return errors.New("illegal mask")
-	}
-	newIP, err = parseDottedQuad(dq)
-	if err != nil {
-		return err
-	}
-	i4.ip = newIP
-	i4.maskBits = newMask
-	return nil
-}
-
-// FromString sets the state from the string but supports + Notation for Offsets
-func (i4 *I4) FromString(s string) error {
-	offsetSplit := strings.Split(s, "+")
-	if len(offsetSplit) == 2 {
-		offset, err := strconv.Atoi(offsetSplit[1])
-		if err != nil {
-			log.Printf("can't parse offset from (%s): %v", s, err)
-		}
-		ip, err := NewI4NoOffset(offsetSplit[0])
-		if err != nil {
-			return fmt.Errorf("can't create I4 from (%s): %v", s, err)
-		}
-		hostip, err := ip.Offset(offset)
-		if err != nil {
-			return fmt.Errorf("illegal offset from (%s): %v", s, err)
-		}
-		i4.ip = hostip.ip
-		i4.maskBits = hostip.maskBits
+	if len(b) > net.IPv6len {
 		return nil
 	}
-	ip, err := NewI4NoOffset(s)
-	if err != nil {
-		return fmt.Errorf("can't create I4 from (%s): %v", s, err)
+	if len(b) <= net.IPv4len {
+		ret.ip[10] = 0xff
+		ret.ip[11] = 0xff
 	}
-	i4.ip = ip.ip
-	i4.maskBits = ip.maskBits
-	return nil
+	copy(ret.ip[net.IPv6len-len(b):net.IPv6len], b)
+
+	ret.MakeHostInplace()
+	return ret
 }
 
-// NewI4 create a new I4 from a string
-func NewI4(s string) (I4, error) {
-	i := I4{}
-	err := i.FromString(s)
-	return i, err
-}
-
-// NewI4FromIP creates a new I4 from net.IP (32 bit mask)
-func NewI4FromIP(ni net.IP) I4 {
-	i := I4{}
-	i.ip = IPToInt(ni)
-	i.maskBits = 32
-	return i
-}
-
-// NewI4NoOffset create a new I4 from a string
-func NewI4NoOffset(s string) (I4, error) {
-	i := I4{}
-	err := i.FromStringNoOffset(s)
-	return i, err
-}
-
-// MustNewI4 creates a new I4 value and panics on error
-func MustNewI4(s string) I4 {
-	ai, err := NewI4(s)
-	if err != nil {
-		panic(err)
+// FromBigInt creates an IP from a net.IP
+func (ip *IP) FromBigInt(i *big.Int) {
+	b := i.Bytes()
+	ip.ip = make(net.IP, net.IPv6len)
+	if len(b) > net.IPv6len {
+		return
 	}
-	return ai
+	if len(b) <= net.IPv4len {
+		ip.ip[10] = 0xff
+		ip.ip[11] = 0xff
+	}
+	copy(ip.ip[net.IPv6len-len(b):net.IPv6len], b)
+
+	ip.MakeHostInplace()
 }
 
-// IP returns the IP
-func (i4 I4) IP() net.IP {
-	return IntToIP(i4.ip)
+// Parse creates an IP from a string
+func Parse(s string) *IP {
+	ip := &IP{}
+	if s == "" {
+		return Parse("0.0.0.0/0")
+	}
+	if i := strings.LastIndex(s, "/"); i > -1 {
+		address := string([]byte(s)[0:i])
+		mask := string([]byte(s)[i+1 : len(s)])
+		debugln(i, address, mask)
+		ip.ip = net.ParseIP(address)
+		if ip.ip == nil {
+			debugf("ip parse error %s", address)
+			return nil
+		}
+		maskI, err := strconv.Atoi(mask)
+		if err != nil {
+			return nil
+		}
+		ip.mask = maskI
+		if !MaskOk(ip.ip, maskI) {
+			return nil
+		}
+		return ip
+	}
+	if i := strings.LastIndex(s, " "); i > -1 {
+		address := string([]byte(s)[0:i])
+		mask := string([]byte(s)[i+1 : len(s)])
+		debugln(i, address, mask)
+		ip.ip = net.ParseIP(address)
+		if ip.ip == nil {
+			debugf("ip parse error %s", address)
+			return nil
+		}
+		m := net.ParseIP(mask)
+		if m == nil {
+			debugf("ip parse error %s", address)
+			return nil
+		}
+		ip.mask, _ = net.IPMask(m.To4()).Size()
+		if !MaskOk(ip.ip, ip.mask) {
+			return nil
+		}
+		return ip
+	}
+	ip.ip = net.ParseIP(s)
+	if ip.ip == nil {
+		fmt.Println(ip.ip)
+		return nil
+	}
+	ip.MakeHostInplace()
+	return ip
 }
 
-// Mask returns the Mask
-func (i4 I4) Mask() IPMask {
-	return IPMask(net.CIDRMask(i4.maskBits, 32))
+// MaskOk returns if the mask is within acceptable range
+func MaskOk(ip net.IP, cidr int) bool {
+	if cidr < 0 {
+		return false
+	}
+	if v4 := ip.To4(); v4 != nil {
+		return cidr <= 32
+	}
+	return cidr <= 128
+}
+
+// MakeHost clones and sets the clone's mask to a host mask, then returns it
+func (ip *IP) MakeHost() *IP {
+	ret := ip.Clone()
+	if v4 := ret.ip.To4(); v4 != nil {
+		ret.mask = 32
+	} else {
+		ret.mask = 128
+	}
+	return ret
+}
+
+// MakeHostInplace sets the mask to a host mask
+func (ip *IP) MakeHostInplace() {
+	if v4 := ip.ip.To4(); v4 != nil {
+		ip.mask = 32
+	} else {
+		ip.mask = 128
+	}
+}
+
+// SetMask clones and sets the clone's mask to a host mask, then returns it
+func (ip *IP) SetMask(m int) *IP {
+	ret := ip.Clone()
+	if MaskOk(ip.ip, m) {
+		ret.mask = m
+	}
+	return ret
+}
+
+// SetMaskInplace sets the mask to a host mask
+func (ip *IP) SetMaskInplace(m int) {
+	if MaskOk(ip.ip, m) {
+		ip.mask = m
+	}
 }
 
 // MaskBits returns the Mask
-func (i4 I4) MaskBits() int {
-	return i4.maskBits
+func (ip *IP) MaskBits() int {
+	return ip.mask
+}
+
+// IP returns the IP
+func (ip *IP) IP() net.IP {
+	return ip.ip
+}
+
+// IsV4 returns true if ip is an IPv4 address
+func (ip *IP) IsV4() bool {
+	return ip.ip.To4() != nil
+}
+
+// IsV6 returns true if ip is an IPv6 address
+func (ip *IP) IsV6() bool {
+	return len(ip.ip) == 16 && ip.ip.To4() == nil
 }

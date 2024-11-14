@@ -1,60 +1,174 @@
 package iphhy
 
-import "testing"
+import (
+	"net"
+	"reflect"
+	"testing"
+)
 
-func TestBaseLast(t *testing.T) {
-	tests := []struct {
-		input         string
-		wantedHostInt uint32
-		wantedBase    uint32
-		wantedLast    uint32
-	}{
-		{"192.168.21.18/24", 3232240914, 3232240896, 3232241151},
+func TestIP_Offset(t *testing.T) {
+	type fields struct {
+		ip   net.IP
+		mask int
 	}
-
-	for i, tt := range tests {
-		aip, _ := NewI4(tt.input)
-		gotHostInt := aip.ip
-		gotBase := aip.Base().Number()
-		gotLast := aip.Last().Number()
-		switch {
-		case gotHostInt != tt.wantedHostInt:
-			t.Errorf("TestBaseLast#%d: tt: %v IpToInt failed: %d", i, tt, gotHostInt)
-		case gotBase != tt.wantedBase:
-			t.Errorf("TestBaseLast#%d: tt: %v BaseIP failed: %d", i, tt, gotBase)
-		case gotLast != tt.wantedLast:
-			t.Errorf("TestBaseLast#%d: tt: %v LastIP failed: %d", i, tt, gotLast)
-		}
+	type args struct {
+		offset int64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *IP
+	}{
+		{
+			name: "offset+1",
+			fields: fields{
+				ip:   net.ParseIP("1.2.3.4"),
+				mask: 24,
+			},
+			args: args{
+				offset: 1,
+			},
+			want: Parse("1.2.3.5/24"),
+		},
+		{
+			name: "offset-1",
+			fields: fields{
+				ip:   net.ParseIP("1.2.3.4"),
+				mask: 24,
+			},
+			args: args{
+				offset: -1,
+			},
+			want: Parse("1.2.3.3/24"),
+		},
+		{
+			name: "offset+256",
+			fields: fields{
+				ip:   net.ParseIP("1.2.3.0"),
+				mask: 24,
+			},
+			args: args{
+				offset: 256,
+			},
+			want: Parse("1.2.4.0/24"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ip := &IP{
+				ip:   tt.fields.ip,
+				mask: tt.fields.mask,
+			}
+			if got := ip.Offset(tt.args.offset); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IP.Offset() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
-func TestOffset(t *testing.T) {
+func TestIP_SubnetOffset(t *testing.T) {
+	type fields struct {
+		ip   net.IP
+		mask int
+	}
 	type args struct {
-		AIP    string
-		Offset int
+		offset int64
 	}
 	tests := []struct {
-		args           args
-		wanted         string
-		wantederrisnil bool
+		name    string
+		fields  fields
+		args    args
+		want    *IP
+		wantErr bool
 	}{
-		{args{"192.168.0.1/24", 0}, "192.168.0.0/24", true},
-		{args{"192.168.0.1/24", 2}, "192.168.0.2/24", true},
-		{args{"192.168.0.1/24", -1}, "192.168.0.255/24", true},
-		{args{"192.168.0.1/24", -2}, "192.168.0.254/24", true},
+		{
+			name: "subnetoffset+0",
+			fields: fields{
+				ip:   net.ParseIP("192.168.0.1"),
+				mask: 24,
+			},
+			args: args{
+				offset: 0,
+			},
+			want:    Parse("192.168.0.0/24"),
+			wantErr: false,
+		},
+		{
+			name: "subnetoffset+2",
+			fields: fields{
+				ip:   net.ParseIP("192.168.0.1"),
+				mask: 24,
+			},
+			args: args{
+				offset: 2,
+			},
+			want:    Parse("192.168.0.2/24"),
+			wantErr: false,
+		},
+		{
+			name: "subnetoffset-1",
+			fields: fields{
+				ip:   net.ParseIP("192.168.0.1"),
+				mask: 24,
+			},
+			args: args{
+				offset: -1,
+			},
+			want:    Parse("192.168.0.255/24"),
+			wantErr: false,
+		},
+		{
+			name: "subnetoffset-2",
+			fields: fields{
+				ip:   net.ParseIP("192.168.0.1"),
+				mask: 24,
+			},
+			args: args{
+				offset: -2,
+			},
+			want:    Parse("192.168.0.254/24"),
+			wantErr: false,
+		},
+		{
+			name: "subnetoffset+256",
+			fields: fields{
+				ip:   net.ParseIP("192.168.0.1"),
+				mask: 24,
+			},
+			args: args{
+				offset: 256,
+			},
+			want:    &IP{ip: nil, mask: 0},
+			wantErr: true,
+		},
+		{
+			name: "subnetoffset-257",
+			fields: fields{
+				ip:   net.ParseIP("192.168.0.1"),
+				mask: 24,
+			},
+			args: args{
+				offset: -257,
+			},
+			want:    &IP{ip: nil, mask: 0},
+			wantErr: true,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ip := &IP{
+				ip:   tt.fields.ip,
+				mask: tt.fields.mask,
+			}
+			got, err := ip.SubnetOffset(tt.args.offset)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("IP.SubnetOffset() error = %v, want %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IP.SubnetOffset() = %+v, want %+v", got, tt.want)
+			}
 
-	for i, tt := range tests {
-		aip := MustNewI4(tt.args.AIP)
-		resultAip, err := aip.Offset(tt.args.Offset)
-		errisnil := err == nil
-		if errisnil != tt.wantederrisnil {
-			t.Errorf("TestOffset#%d: wrong error conditon args:%v ", i, tt.args)
-			continue
-		}
-		if errisnil && resultAip.String() != tt.wanted {
-			t.Errorf("TestOffset#%d: wrong result args:%v got: %s wanted:%s ", i, tt.args, resultAip.String(), tt.wanted)
-			continue
-		}
+		})
 	}
 }
